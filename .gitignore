@@ -1,0 +1,22 @@
+# Large data + secrets (never committed)
+data/*.xlsx
+data/pdfs/
+chroma_db/
+.env
+.env.local
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+.pytest_cache/
+.ipynb_checkpoints/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.swp
