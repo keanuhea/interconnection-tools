@@ -89,9 +89,18 @@ st.caption(
 
 st.divider()
 
-# ── 1. Ask the corpus — inline input as the first row ────────────────────────
+# ── 1. Ask the corpus — sample-question expander, then inline text input ────
 incoming = st.session_state.pending_question
 st.session_state.pending_question = None
+
+with st.expander("💡 Try a question", expanded=False):
+    st.caption("Click any to send it to the corpus:")
+    sq_cols = st.columns(2)
+    for i, q in enumerate(SUGGESTED_QUESTIONS):
+        with sq_cols[i % 2]:
+            if st.button(q, use_container_width=True, key=f"sq_{hash(q)}"):
+                st.session_state.pending_question = q
+                st.rerun()
 
 with st.form("query_form", clear_on_submit=True):
     typed = st.text_input(
@@ -146,19 +155,7 @@ for i, turn in enumerate(st.session_state.history):
                     st.caption(f"> {c.text}")
 
 
-# ── 2. Suggested questions ───────────────────────────────────────────────────
-st.divider()
-st.subheader("Try a question")
-st.caption("Click any to send it to the corpus:")
-sq_cols = st.columns(2)
-for i, q in enumerate(SUGGESTED_QUESTIONS):
-    with sq_cols[i % 2]:
-        if st.button(q, use_container_width=True, key=f"sq_{hash(q)}"):
-            st.session_state.pending_question = q
-            st.rerun()
-
-
-# ── 3. Source documents ──────────────────────────────────────────────────────
+# ── 2. Source documents ──────────────────────────────────────────────────────
 st.divider()
 st.subheader("Documents indexed")
 docs = _corpus_documents()
