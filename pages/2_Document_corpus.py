@@ -89,13 +89,54 @@ st.caption(
 
 st.divider()
 
-# ── 1. Chat — primary surface, full width ────────────────────────────────────
-# Replay history first so the conversation reads top-down.
-for turn in st.session_state.history:
-    with st.chat_message(turn["role"]):
-        st.markdown(turn["content"])
+# ── 1. Ask the corpus — inline input as the first row ────────────────────────
+incoming = st.session_state.pending_question
+st.session_state.pending_question = None
+
+with st.form("query_form", clear_on_submit=True):
+    typed = st.text_input(
+        "Ask the corpus",
+        placeholder="Ask about FERC Order 2023, cluster studies, queue mechanics...",
+        label_visibility="collapsed",
+    )
+    submitted = st.form_submit_button("Send", type="primary")
+
+if submitted and typed:
+    incoming = typed
+
+if incoming:
+    has_key = bool(os.getenv("ANTHROPIC_API_KEY"))
+    if has_key:
+        with st.spinner("Retrieving + generating..."):
+            result = ask(incoming)
+        answer_text = result.answer
+        citations = result.citations
+    else:
+        with st.spinner("Retrieving (LLM disabled — no Anthropic key set)..."):
+            citations = retrieve(incoming)
+        answer_text = (
+            "⚠️ `ANTHROPIC_API_KEY` isn't set, so I can't synthesize an answer. "
+            "Below are the top retrieved chunks from the corpus — these are what "
+            "would be sent to Claude for synthesis. Set the key in `.env` to enable "
+            "full RAG answers."
+        )
+    st.session_state.history.insert(0, {
+        "question": incoming,
+        "answer": answer_text,
+        "citations": citations,
+        "had_key": has_key,
+    })
+
+# Render history (most-recent first)
+for i, turn in enumerate(st.session_state.history):
+    with st.container(border=True):
+        st.markdown(f"**Q.** {turn['question']}")
+        st.markdown(turn["answer"])
         if turn.get("citations"):
-            with st.expander(f"Sources ({len(turn['citations'])})"):
+            with st.expander(
+                f"Sources ({len(turn['citations'])})",
+                expanded=(i == 0 and not turn.get("had_key", True)),
+            ):
                 for c in turn["citations"]:
                     loc = f"p.{c.page}" if c.page else "page ?"
                     st.markdown(
@@ -103,50 +144,6 @@ for turn in st.session_state.history:
                         f"similarity {c.score:.2f}"
                     )
                     st.caption(f"> {c.text}")
-
-# Pick up the next question — chip click takes priority, otherwise chat input
-incoming = st.session_state.pending_question
-st.session_state.pending_question = None
-if not incoming:
-    incoming = st.chat_input(
-        "Ask about FERC Order 2023, cluster studies, queue mechanics..."
-    )
-
-if incoming:
-    st.session_state.history.append({"role": "user", "content": incoming})
-    with st.chat_message("user"):
-        st.markdown(incoming)
-
-    has_key = bool(os.getenv("ANTHROPIC_API_KEY"))
-    with st.chat_message("assistant"):
-        if has_key:
-            with st.spinner("Retrieving + generating..."):
-                result = ask(incoming)
-            answer_text = result.answer
-            citations = result.citations
-        else:
-            with st.spinner("Retrieving (LLM disabled — no Anthropic key set)..."):
-                citations = retrieve(incoming)
-            answer_text = (
-                "⚠️ `ANTHROPIC_API_KEY` isn't set, so I can't synthesize an answer. "
-                "Below are the top retrieved chunks from the corpus — these are what "
-                "would be sent to Claude for synthesis. Set the key in `.env` to enable "
-                "full RAG answers."
-            )
-        st.markdown(answer_text)
-        with st.expander(f"Sources ({len(citations)})", expanded=not has_key):
-            for c in citations:
-                loc = f"p.{c.page}" if c.page else "page ?"
-                st.markdown(
-                    f"**{_pretty_label(c.filename)}** · {loc} · "
-                    f"similarity {c.score:.2f}"
-                )
-                st.caption(f"> {c.text}")
-        st.session_state.history.append({
-            "role": "assistant",
-            "content": answer_text,
-            "citations": citations,
-        })
 
 
 # ── 2. Suggested questions ───────────────────────────────────────────────────
