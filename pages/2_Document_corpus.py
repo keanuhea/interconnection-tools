@@ -115,20 +115,34 @@ if submitted and typed:
 
 if incoming:
     has_key = bool(os.getenv("ANTHROPIC_API_KEY"))
-    if has_key:
-        with st.spinner("Retrieving + generating..."):
-            result = ask(incoming)
-        answer_text = result.answer
-        citations = result.citations
-    else:
-        with st.spinner("Retrieving (LLM disabled — no Anthropic key set)..."):
-            citations = retrieve(incoming)
+    answer_text = None
+    citations = []
+    try:
+        if has_key:
+            with st.spinner("Retrieving + generating..."):
+                result = ask(incoming)
+            answer_text = result.answer
+            citations = result.citations
+        else:
+            with st.spinner("Retrieving (LLM disabled — no Anthropic key set)..."):
+                citations = retrieve(incoming)
+            answer_text = (
+                "⚠️ `ANTHROPIC_API_KEY` isn't set, so I can't synthesize an answer. "
+                "Below are the top retrieved chunks from the corpus — these are what "
+                "would be sent to Claude for synthesis. Set the key in `.env` to enable "
+                "full RAG answers."
+            )
+    except (RuntimeError, ImportError, ModuleNotFoundError, TypeError) as e:
+        # Empty corpus OR a vector-store dependency that didn't load cleanly
+        # (e.g. chromadb on a too-new Python). Degrade gracefully.
         answer_text = (
-            "⚠️ `ANTHROPIC_API_KEY` isn't set, so I can't synthesize an answer. "
-            "Below are the top retrieved chunks from the corpus — these are what "
-            "would be sent to Claude for synthesis. Set the key in `.env` to enable "
-            "full RAG answers."
+            "📚 **The document corpus isn't indexed yet on this deployment.**\n\n"
+            "The vector store is empty or its dependencies didn't load. "
+            "Drop FERC/PJM PDFs into `data/pdfs/` and run "
+            "`python -m src.corpus.ingest` to populate the index, then redeploy. "
+            f"\n\n_Underlying error: `{type(e).__name__}: {e}`_"
         )
+        citations = []
     st.session_state.history.insert(0, {
         "question": incoming,
         "answer": answer_text,
