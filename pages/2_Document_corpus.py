@@ -12,7 +12,7 @@ from pathlib import Path
 
 import streamlit as st
 
-from src.corpus.config import get_chroma_collection
+from src.corpus.config import PDF_DIR, get_chroma_collection
 from src.corpus.query import ask, retrieve
 
 st.set_page_config(
@@ -20,6 +20,31 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state="collapsed",
 )
+
+
+@st.cache_resource(show_spinner="Building corpus index (first-time setup, ~30s)...")
+def _ensure_corpus_index() -> str | None:
+    """Build the index on first session if it's empty.
+
+    Idempotent — `ingest()` checks what's already indexed and skips dupes.
+    Returns an error string for display, or None on success/no-op.
+    Auto-rebuilding here avoids ChromaDB version-mismatch issues between
+    the committed index and the deployment's chromadb wheel.
+    """
+    try:
+        if not PDF_DIR.exists() or not any(PDF_DIR.glob("*.pdf")):
+            return None
+        collection = get_chroma_collection()
+        if collection.count() > 0:
+            return None
+        from src.corpus.ingest import ingest
+        ingest()
+    except Exception as e:
+        return f"{type(e).__name__}: {e}"
+    return None
+
+
+_ingest_error = _ensure_corpus_index()
 
 if st.button("← Back to cover"):
     st.switch_page("pages/0_Cover.py")
