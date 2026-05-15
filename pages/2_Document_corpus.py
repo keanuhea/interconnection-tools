@@ -15,6 +15,12 @@ import streamlit as st
 from src.corpus.config import get_chroma_collection
 from src.corpus.query import ask, retrieve
 
+st.set_page_config(
+    page_title="Document corpus · Interconnection tools",
+    layout="wide",
+    initial_sidebar_state="collapsed",
+)
+
 if st.button("← Back to cover"):
     st.switch_page("pages/0_Cover.py")
 

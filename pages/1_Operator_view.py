@@ -32,6 +32,12 @@ from src.operator.state_machine import (
 )
 from src.operator.withdrawal_model import score_open_queue, train
 
+st.set_page_config(
+    page_title="Operator simulator · Interconnection tools",
+    layout="wide",
+    initial_sidebar_state="collapsed",
+)
+
 if st.button("← Back to cover"):
     st.switch_page("pages/0_Cover.py")
 
