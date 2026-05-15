@@ -463,10 +463,14 @@ st.header(
     f"If history repeats: only {expected_op / n_cohort:.0%} of today's queue reaches the grid by {horizon_dt.year}"
 )
 st.markdown(
-    f"Starting from **{n_cohort:,} active LBNL projects ({initial_gw:,.0f} GW)** and rolling forward "
-    "ten years using empirically-fit monthly transition hazards, the simulation runs **500 Monte Carlo "
-    "replicates**. Each replicate samples a possible future for every project independently, given its "
-    "current milestone state. **Pull the levers below** to see how operator-side policy changes shift the cohort."
+    f"Starting from **{n_cohort:,} LBNL projects still in flight at 2024-12-31 "
+    f"({initial_gw:,.0f} GW)** and rolling forward ten years using empirically-fit monthly transition "
+    "hazards, the simulation runs **500 Monte Carlo replicates**. The cohort is defined by milestone "
+    "state at simulation start — projects whose ultimate outcome (operational or withdrawn) has since "
+    "been observed are included and re-projected forward, which gives the model a built-in sanity check "
+    "against history. Each replicate samples a possible future for every project independently, given "
+    "its milestone state at the start. **Pull the levers below** to see how operator-side policy "
+    "changes shift the cohort."
 )
 
 # ── Operator-side lever panel ────────────────────────────────────────────────
