@@ -155,9 +155,13 @@ k3.metric(
     help="Among resolved projects (withdrawn or operational), share that reached commercial operation.",
 )
 k4.metric(
-    "Median wait of active projects",
+    "Time already waited (active projects)",
     f"{median_active_wait:.1f} years",
-    help="Years between queue entry date and 2024-12-31.",
+    help=(
+        "How long the median currently-active project has been sitting in the queue *so far* "
+        "(years between queue entry date and 2024-12-31). Distinct from the median wait to a "
+        "signed interconnection agreement — see the 'From filing to grid' funnel below."
+    ),
 )
 
 # ───── How the data is being read ─────────────────────────────────────────────
