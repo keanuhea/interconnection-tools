@@ -24,7 +24,9 @@ pdfplumber>=0.11.0
 anthropic>=0.40.0
 python-dotenv>=1.0.0
 
-# Force a protobuf version compatible with chromadb's generated _pb2.py files.
-# Without this pin, Streamlit Cloud was resolving an older protobuf (< 5.x) that
-# raised "Descriptors cannot be created directly" on chromadb import.
-protobuf>=5.0.0
+# Pin protobuf to an exact 5.x version. Earlier loose pin (>=5.0) wasn't
+# strict enough to force Streamlit Cloud to re-resolve, and chromadb kept
+# raising 'Descriptors cannot be created directly'. 5.28.x satisfies the
+# transitive constraints from googleapis-common-protos and opentelemetry-proto
+# while being recent enough for chromadb 1.5.x.
+protobuf==5.28.3
