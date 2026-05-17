@@ -23,3 +23,8 @@ pdfplumber>=0.11.0
 # Shared
 anthropic>=0.40.0
 python-dotenv>=1.0.0
+
+# Force a protobuf version compatible with chromadb's generated _pb2.py files.
+# Without this pin, Streamlit Cloud was resolving an older protobuf (< 5.x) that
+# raised "Descriptors cannot be created directly" on chromadb import.
+protobuf>=5.0.0
