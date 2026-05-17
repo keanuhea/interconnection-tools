@@ -7,6 +7,15 @@ nav is suppressed in favor of the cover-page CTAs.
 
 from __future__ import annotations
 
+# Force protobuf to use pure-Python parsing. ChromaDB's generated _pb2.py
+# files were compiled against newer protoc, and Streamlit Cloud's wheel
+# cache sometimes serves an older protobuf binary that raises 'Descriptors
+# cannot be created directly'. This bypasses the version check entirely.
+# Must be set BEFORE any chromadb / google.protobuf import — that's why
+# it's at the very top of the entry-point module.
+import os
+os.environ.setdefault("PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION", "python")
+
 import streamlit as st
 
 st.set_page_config(
