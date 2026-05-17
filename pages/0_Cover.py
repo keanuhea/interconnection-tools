@@ -66,9 +66,11 @@ The interconnection process is a *fragmented* data problem. Two distinct fragmen
 | **Structured** | Tabular data — queue rosters, milestone dates, project attributes | "If FERC reform delivers, how much more capacity reaches the grid by 2030?" |
 | **Unstructured** | PDF documents — FERC orders, tariff manuals, cluster study reports | "How does Order 2023-A change cost allocation in clusters?" |
 
-A real operator workflow stitches both. Tapestry (Alphabet/X) is building that
-unified model at the grid-operator level. These two dashboards are a small,
-public-data demonstration of the same two angles.
+A real operator workflow stitches both. These two dashboards are a small,
+public-data demonstration of how the structured and unstructured layers fit
+together — the same two-sided data problem that vendors building unified
+grid-operator platforms (Tapestry/Alphabet, WeaveGrid, Wattch, others) are
+working on at the operator-internal level.
 
 **Source repos:**
 - [`interconnection-queue-analysis`](https://github.com/keanuhea/interconnection-queue-analysis) — the operator simulator, standalone

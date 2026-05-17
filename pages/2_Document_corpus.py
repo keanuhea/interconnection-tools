@@ -1,4 +1,4 @@
-"""FERC + PJM Interconnection RAG — Tapestry-narrative dashboard.
+"""FERC + PJM Interconnection RAG — document-side dashboard.
 
 Companion to the operator simulator: that page simulates the queue's
 structured data, this one queries the unstructured documents that govern
@@ -225,7 +225,7 @@ st.divider()
 st.info(
     "**Where this fits.** This is half of a pair. The operator simulator (other page) "
     "models the *structured* side of the same problem — a multi-state Markov simulation "
-    "of queue progression with an interactive scenario panel. Tapestry's product surface "
+    "of queue progression with an interactive scenario panel. A real operator workflow "
     "unifies both: structured-data simulation for what-if planning, document understanding "
     "for the regulatory and engineering context that grounds the data."
 )

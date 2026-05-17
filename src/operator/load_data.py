@@ -12,6 +12,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import numpy as np
 import pandas as pd
 
 DATA_DIR = Path(__file__).resolve().parent.parent.parent / "data"
@@ -65,7 +66,8 @@ def _parse_date_column(s: pd.Series) -> pd.Series:
     if pd.api.types.is_datetime64_any_dtype(s):
         return s
     if pd.api.types.is_numeric_dtype(s):
-        return pd.to_datetime(s, unit="D", origin=EXCEL_EPOCH, errors="coerce")
+        with np.errstate(over="ignore", invalid="ignore"):
+            return pd.to_datetime(s, unit="D", origin=EXCEL_EPOCH, errors="coerce")
     return pd.to_datetime(s, errors="coerce")
 
 

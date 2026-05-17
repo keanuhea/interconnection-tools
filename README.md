@@ -5,7 +5,7 @@ One front door for two dashboards on the U.S. grid interconnection queue:
 - **⚡ Operator simulator** — multi-state survival simulation of how today's queue clears over the next decade, with an interactive scenario panel for operator-side policy levers.
 - **📚 Document corpus** — RAG pipeline over FERC Order 2023, the rehearing order, and PJM tariff/study filings, with inline citations.
 
-Built as a portfolio piece exploring the data problem Tapestry (Alphabet/X) is solving for grid operators — approached from the public-data layer, with two angles on the same fragmented-data problem.
+Built as a portfolio piece exploring the fragmented-data problem facing U.S. grid operators — the same problem that vendors of unified grid-operator software are tackling at the operator-internal level, approached here from the public-data layer with two angles.
 
 ## Why a combined repo
 
