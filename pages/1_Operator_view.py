@@ -139,9 +139,34 @@ st.caption(
     "Built as a portfolio piece exploring the same fragmented-data problem that vendors of unified grid-operator software are working on."
 )
 
+st.markdown(
+    """
+**This dashboard pulls two complementary data sources.**
+
+- **Berkeley Lab's *Queued Up* dataset** is the historical record: 36,441 projects across
+  every U.S. RTO from 1996 through 2024-12-31, peer-reviewed and normalized across operators.
+  It's the *textbook* — long-run base rates and the data the simulation's hazard model is
+  fit on. Without cross-RTO consistency you'd be modeling a single operator's idiosyncrasies.
+- **PJM's planning API** is the live cohort: weekly snapshots of every project currently
+  in flight at PJM, the largest U.S. RTO. It's the *news feed* — fresh in a way LBNL can't
+  be (LBNL is annual; PJM is this morning). Single-RTO, but PJM has 67M people across 13
+  states + DC, so the cohort is large.
+
+**What each powers below.** LBNL drives the headline KPIs, the funnel, the simulation
+cohort + hazard rates, and the model that scores at-risk projects. PJM live drives the
+live snapshot tracker and the at-risk project list (scored with the LBNL-trained model).
+"""
+)
+
 st.divider()
 
-# ───── Hero KPIs ──────────────────────────────────────────────────────────────
+# ───── Historical view (LBNL) ────────────────────────────────────────────────
+st.header("The historical view: Berkeley Lab *Queued Up*")
+st.caption(
+    "36,441 projects across all U.S. RTOs, 1996 → 2024-12-31. What the long-run "
+    "cross-RTO record shows about how the queue has actually behaved."
+)
+
 k1, k2, k3, k4 = st.columns(4)
 k1.metric(
     "Active queue",
@@ -162,6 +187,81 @@ k4.metric(
         "(years between queue entry date and 2024-12-31). Distinct from the median wait to a "
         "signed interconnection agreement — see the 'From filing to grid' funnel below."
     ),
+)
+
+
+# ── Funnel: the full journey, filed → operational ───────────────────────────
+@st.cache_data(show_spinner=False)
+def _funnel_stats(_df):
+    n_total = len(_df)
+    got_ia = int(_df["ia_signed"].notna().sum())
+    got_op = int(_df["operational_date"].notna().sum())
+
+    ia_done = _df.dropna(subset=["queue_date", "ia_signed"]).copy()
+    ia_done["ttoia"] = (ia_done["ia_signed"] - ia_done["queue_date"]).dt.days / 365.25
+    ia_done = ia_done[ia_done["ttoia"].between(0, 25)]
+
+    op_done = _df.dropna(subset=["ia_signed", "operational_date"]).copy()
+    op_done["ttoop"] = (op_done["operational_date"] - op_done["ia_signed"]).dt.days / 365.25
+    op_done = op_done[op_done["ttoop"].between(0, 15)]
+
+    both = _df.dropna(subset=["queue_date", "operational_date"]).copy()
+    both["total"] = (both["operational_date"] - both["queue_date"]).dt.days / 365.25
+    both = both[both["total"].between(0, 30)]
+
+    return {
+        "n_total": n_total,
+        "n_ia": got_ia,
+        "n_op": got_op,
+        "med_queue_yrs": float(ia_done["ttoia"].median()),
+        "med_construction_yrs": float(op_done["ttoop"].median()),
+        "med_total_yrs": float(both["total"].median()),
+    }
+
+
+_fs = _funnel_stats(df)
+
+st.subheader("From filing to grid: the full funnel")
+st.markdown(
+    "Two phrases get conflated all the time. **\"Time in the queue\"** is the wait from filing "
+    "an interconnection request to a signed agreement (IA). **\"Time to operational on the grid\"** "
+    "is the full journey from filing to commercial operation date (COD), which includes ~2 more "
+    "years of physical construction *after* the queue work is done. Here's what the LBNL historical "
+    "record actually shows for projects that completed each stage."
+)
+
+ffig = go.Figure(go.Funnel(
+    y=["Filed", "Reached signed agreement (IA)", "Reached commercial operation (COD)"],
+    x=[_fs["n_total"], _fs["n_ia"], _fs["n_op"]],
+    textposition="inside",
+    textinfo="value+percent initial",
+    marker={"color": ["#4a90e2", "#7eb8df", "#2ca02c"]},
+))
+ffig.update_layout(height=320, margin=dict(t=10, b=10, l=10, r=10))
+st.plotly_chart(ffig, use_container_width=True)
+
+t1, t2, t3 = st.columns(3)
+t1.metric(
+    "Time in queue (filed → IA)",
+    f"{_fs['med_queue_yrs']:.1f} yrs",
+    help="Median years from queue submission to a signed Interconnection Agreement, among projects that reached IA.",
+)
+t2.metric(
+    "Construction (IA → COD)",
+    f"{_fs['med_construction_yrs']:.1f} yrs",
+    help="Median years from signed IA to commercial operation, among projects that reached COD.",
+)
+t3.metric(
+    "Filed → operational on grid",
+    f"{_fs['med_total_yrs']:.1f} yrs",
+    help="Median total wall-clock time from queue filing to commercial operation for projects that made it.",
+)
+
+st.caption(
+    f"Only **{_fs['n_ia'] / _fs['n_total']:.0%}** of every project that ever entered a U.S. queue "
+    f"has reached a signed IA. Only **{_fs['n_op'] / _fs['n_total']:.0%}** has reached commercial "
+    "operation. The simulation further down the page projects what fraction of *today's* in-flight "
+    "cohort will pass each gate under different operator-side scenarios."
 )
 
 # ───── How the data is being read ─────────────────────────────────────────────
@@ -213,14 +313,14 @@ st.divider()
 pjm_df, snapshot_dt = _load_pjm()
 
 if pjm_df is not None:
-    st.header("Live tracker: PJM queue right now")
+    st.header("The live view: PJM planning API")
     st.caption(
-        f"Snapshot taken **{snapshot_dt:%B %d, %Y}** directly from PJM's planning API. "
-        "PJM operates the largest U.S. RTO (67M people, 13 states + DC) and is the first "
-        "operator to roll out AI-assisted application processing under FERC Order 2023. "
-        "Cycle 1 of PJM's reformed interconnection process "
-        "received 811 new projects (220 GW) on April 28, 2026 — that data is in PJM's 91-day "
-        "validation phase and not yet machine-readable. The numbers below cover the **transition cohort**: "
+        f"Snapshot pulled **{snapshot_dt:%B %d, %Y}** from PJM's planning API — the freshest "
+        "milestone-level view we have. PJM operates the largest U.S. RTO (67M people, 13 states "
+        "+ DC) and is the first operator to roll out AI-assisted application processing under "
+        "FERC Order 2023. Cycle 1 of the reformed interconnection process received 811 new "
+        "projects (220 GW) on April 28, 2026 — that data is in PJM's 91-day validation phase "
+        "and not yet machine-readable. The numbers below cover the **transition cohort**: "
         "projects already in PJM's queue working through the legacy → reformed handoff."
     )
 
@@ -467,6 +567,11 @@ n_cohort = len(cohort)
 st.header(
     f"If history repeats: only {expected_op / n_cohort:.0%} of today's queue reaches the grid by {horizon_dt.year}"
 )
+st.caption(
+    "Uses the LBNL historical record — the only dataset with cross-RTO transition history "
+    "long enough to fit hazard rates that generalize. The PJM live snapshot above is the "
+    "current-week sanity check against what the model expects."
+)
 st.markdown(
     f"Starting from **{n_cohort:,} LBNL projects still in flight at 2024-12-31 "
     f"({initial_gw:,.0f} GW)** and rolling forward ten years using empirically-fit monthly transition "
@@ -478,82 +583,6 @@ st.markdown(
     "changes shift the cohort."
 )
 
-
-# ── Funnel: the full journey, filed → operational ───────────────────────────
-@st.cache_data(show_spinner=False)
-def _funnel_stats(_df):
-    n_total = len(_df)
-    got_ia = int(_df["ia_signed"].notna().sum())
-    got_op = int(_df["operational_date"].notna().sum())
-
-    ia_done = _df.dropna(subset=["queue_date", "ia_signed"]).copy()
-    ia_done["ttoia"] = (ia_done["ia_signed"] - ia_done["queue_date"]).dt.days / 365.25
-    ia_done = ia_done[ia_done["ttoia"].between(0, 25)]
-
-    op_done = _df.dropna(subset=["ia_signed", "operational_date"]).copy()
-    op_done["ttoop"] = (op_done["operational_date"] - op_done["ia_signed"]).dt.days / 365.25
-    op_done = op_done[op_done["ttoop"].between(0, 15)]
-
-    both = _df.dropna(subset=["queue_date", "operational_date"]).copy()
-    both["total"] = (both["operational_date"] - both["queue_date"]).dt.days / 365.25
-    both = both[both["total"].between(0, 30)]
-
-    return {
-        "n_total": n_total,
-        "n_ia": got_ia,
-        "n_op": got_op,
-        "med_queue_yrs": float(ia_done["ttoia"].median()),
-        "med_construction_yrs": float(op_done["ttoop"].median()),
-        "med_total_yrs": float(both["total"].median()),
-    }
-
-
-_fs = _funnel_stats(df)
-
-st.subheader("From filing to grid: the full funnel")
-st.markdown(
-    "Two phrases get conflated all the time. **\"Time in the queue\"** is the wait from filing "
-    "an interconnection request to a signed agreement (IA). **\"Time to operational on the grid\"** "
-    "is the full journey from filing to commercial operation date (COD), which includes ~2 more "
-    "years of physical construction after the queue work is done. Here's what the LBNL historical "
-    "record actually shows for projects that completed each stage."
-)
-
-ffig = go.Figure(go.Funnel(
-    y=["Filed", "Reached signed agreement (IA)", "Reached commercial operation (COD)"],
-    x=[_fs["n_total"], _fs["n_ia"], _fs["n_op"]],
-    textposition="inside",
-    textinfo="value+percent initial",
-    marker={"color": ["#4a90e2", "#7eb8df", "#2ca02c"]},
-))
-ffig.update_layout(height=320, margin=dict(t=10, b=10, l=10, r=10))
-st.plotly_chart(ffig, use_container_width=True)
-
-t1, t2, t3 = st.columns(3)
-t1.metric(
-    "Time in queue (filed → IA)",
-    f"{_fs['med_queue_yrs']:.1f} yrs",
-    help="Median years from queue submission to a signed Interconnection Agreement, among projects that reached IA.",
-)
-t2.metric(
-    "Construction (IA → COD)",
-    f"{_fs['med_construction_yrs']:.1f} yrs",
-    help="Median years from signed IA to commercial operation, among projects that reached COD.",
-)
-t3.metric(
-    "Filed → operational on grid",
-    f"{_fs['med_total_yrs']:.1f} yrs",
-    help="Median total wall-clock time from queue filing to commercial operation for projects that made it.",
-)
-
-st.caption(
-    f"Only **{_fs['n_ia'] / _fs['n_total']:.0%}** of every project that ever entered a U.S. queue "
-    f"has reached a signed IA. Only **{_fs['n_op'] / _fs['n_total']:.0%}** has reached commercial "
-    "operation. The simulation below projects what fraction of *today's* in-flight cohort will pass "
-    "each gate under different operator-side scenarios."
-)
-
-st.divider()
 
 # ── Operator-side lever panel ────────────────────────────────────────────────
 # Baseline display values come from the OBSERVED median durations among projects
