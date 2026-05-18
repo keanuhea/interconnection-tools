@@ -395,6 +395,7 @@ if pjm_df is not None:
         st.plotly_chart(fig, use_container_width=True)
 
     st.subheader("Cycle 1 (reformed process)")
+    st.caption("📊 **Data:** PJM's April 29, 2026 announcement (per-project data not yet published)")
     cyc1, cyc2, cyc3, cyc4 = st.columns(4)
     cyc1.metric("Applications received", "811", help="As announced by PJM April 29, 2026.")
     cyc2.metric("Total nameplate capacity", "220 GW")
@@ -415,6 +416,7 @@ risk = full_summary[full_summary["risk_cluster"]]
 share_top10 = risk["total_mw"].sum() / full_summary["total_mw"].sum() if not full_summary.empty else 0
 
 st.header(f"Bottleneck: top 10% of substations carry {share_top10:.0%} of queued capacity")
+st.caption("📊 **Data:** Berkeley Lab *Queued Up* — historical record, all RTOs aggregated by POI")
 st.markdown(
     "A **POI** (point of interconnection) is the substation where a new generation project "
     "plugs into the grid. When many projects target the same POI, they all wait on the same "
@@ -448,6 +450,7 @@ st.divider()
 st.header(
     f"Most projects don't make it: {withdrawal_rate_resolved:.0%} of resolved requests are withdrawn"
 )
+st.caption("📊 **Data:** Berkeley Lab *Queued Up* (model trained on LBNL resolved cohort; at-risk scores computed on LBNL active subset)")
 st.markdown(
     "Of every 100 projects that finish their interconnection journey — either reaching commercial "
     f"operation or being formally withdrawn — only about **{completion_rate_resolved * 100:.0f}** "
@@ -1002,6 +1005,7 @@ st.divider()
 
 # ───── Section 4: How we got here ─────────────────────────────────────────────
 st.header("How we got here: queue growth has accelerated since 2018")
+st.caption("📊 **Data:** Berkeley Lab *Queued Up* — historical record by queue entry year, 2010 → 2024")
 
 if "queue_date" in df.columns and "rto" in df.columns:
     plot_df = df.dropna(subset=["queue_date", "rto"]).copy()
@@ -1067,6 +1071,7 @@ delta_gw = realistic_gw_2030 - baseline_gw_2030
 delta_op = realistic_op_2030 - baseline_op_2030
 
 st.header("The path forward: realistic reform clears an extra " + f"{delta_gw:,.0f} GW by 2030")
+st.caption("📊 **Data:** Monte Carlo simulation (LBNL hazards + LBNL active cohort), realistic-reform lever preset")
 st.markdown(
     f"The interactive panel above shows what's *possible*. This is what's **plausible** — "
     f"cluster-study reform partially delivers, financial milestones tighten modestly, "
